@@ -18,7 +18,15 @@ from pathlib import Path
 # ---------------------------------------------------------
 
 if getattr(sys, "frozen", False):
-    BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    # Em builds PyInstaller --onedir, os arquivos adicionados com --add-data
+    # ficam em sys._MEIPASS (normalmente a pasta _internal/).
+    #
+    # O Vela 0786ba3 ainda resolve templates e staticfiles a partir de
+    # os.getcwd(). Portanto, no executável precisamos fazer o diretório de
+    # trabalho apontar para o bundle, e não para a pasta onde o usuário
+    # extraiu/abriu o executável.
+    BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)).resolve()
+    os.chdir(BASE_DIR)
 else:
     BASE_DIR = Path(__file__).resolve().parent
 
