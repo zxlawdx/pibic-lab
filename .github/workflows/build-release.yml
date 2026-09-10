@@ -115,6 +115,12 @@ jobs:
             --add-data "staticfiles:staticfiles" \
             launcher.py
 
+      - name: Verify Linux bundle assets
+        run: |
+          test -f dist/PIBIC-LAB/_internal/apps/lab/templates/index.html
+          test -f dist/PIBIC-LAB/_internal/staticfiles/lab/css/app.css
+          test -f dist/PIBIC-LAB/_internal/catalog/manifests/docker.yaml
+
       - name: Package Linux build
         run: |
           cd dist
@@ -212,6 +218,20 @@ jobs:
             --add-data "catalog;catalog" `
             --add-data "staticfiles;staticfiles" `
             launcher.py
+
+      - name: Verify Windows bundle assets
+        shell: powershell
+        run: |
+          $required = @(
+            "dist\PIBIC-LAB\_internal\apps\lab\templates\index.html",
+            "dist\PIBIC-LAB\_internal\staticfiles\lab\css\app.css",
+            "dist\PIBIC-LAB\_internal\catalog\manifests\docker.yaml"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Arquivo obrigatório ausente do bundle: $path"
+            }
+          }
 
       - name: Package Windows build
         shell: powershell
