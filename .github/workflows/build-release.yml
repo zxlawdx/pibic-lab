@@ -1,0 +1,251 @@
+name: Build PIBIC LAB
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+  build-linux:
+    name: Linux x86_64
+    needs: test
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3 \
+            python3-venv \
+            python3-gi \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.1 \
+            libwebkit2gtk-4.1-0 \
+            zip
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install frontend build tools
+        run: |
+          npm ci
+          npm install --no-save @tailwindcss/cli@4.3.3
+
+      - name: Create Python environment
+        run: |
+          python3 -m venv .venv --system-site-packages
+          .venv/bin/python -m pip install --upgrade pip setuptools wheel "packaging>=24.2"
+          .venv/bin/python -m pip install -r requirements.txt
+          .venv/bin/python -m pip install \
+            pytest \
+            pyinstaller==6.22.2 \
+            jaraco.text \
+            jaraco.functools \
+            jaraco.context \
+            more-itertools
+
+      - name: Prepare frontend and static files
+        run: |
+          .venv/bin/python scripts/vendor_frontend.py
+          rm -rf staticfiles
+          .venv/bin/python manage.py collectstatic --noinput
+
+      - name: Run tests
+        run: .venv/bin/python -m pytest -q
+
+      - name: Build Linux application
+        run: |
+          rm -rf build dist
+          .venv/bin/python -m PyInstaller \
+            --noconfirm \
+            --clean \
+            --onedir \
+            --name "PIBIC-LAB" \
+            --hidden-import=config \
+            --hidden-import=config.settings \
+            --hidden-import=config.wsgi \
+            --collect-submodules config \
+            --collect-submodules apps \
+            --collect-submodules pibic_lab_core \
+            --collect-all vela \
+            --collect-all webview \
+            --collect-all setuptools \
+            --collect-all jaraco.text \
+            --collect-all jaraco.functools \
+            --collect-all jaraco.context \
+            --collect-all more_itertools \
+            --collect-submodules keyring.backends \
+            --hidden-import=jaraco.text \
+            --hidden-import=jaraco.functools \
+            --hidden-import=jaraco.context \
+            --add-data "apps:apps" \
+            --add-data "catalog:catalog" \
+            --add-data "staticfiles:staticfiles" \
+            launcher.py
+
+      - name: Package Linux build
+        run: |
+          cd dist
+          zip -r PIBIC-LAB-Linux-x86_64.zip PIBIC-LAB
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PIBIC-LAB-Linux-x86_64
+          path: dist/PIBIC-LAB-Linux-x86_64.zip
+          if-no-files-found: error
+
+  build-windows:
+    name: Windows x86_64
+    needs: test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install frontend build tools
+        shell: powershell
+        run: |
+          npm ci
+          npm install --no-save @tailwindcss/cli@4.3.3
+
+      - name: Install Python dependencies
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip setuptools wheel "packaging>=24.2"
+          python -m pip install -r requirements.txt
+          python -m pip install pytest pyinstaller==6.22.2 pywebview==6.2.1 PyQt5 PyQtWebEngine qtpy jaraco.text jaraco.functools jaraco.context more-itertools
+
+      - name: Prepare frontend and static files
+        shell: powershell
+        run: |
+          python scripts/vendor_frontend.py
+          if (Test-Path staticfiles) { Remove-Item staticfiles -Recurse -Force }
+          python manage.py collectstatic --noinput
+
+      - name: Run tests
+        shell: powershell
+        run: python -m pytest -q
+
+      - name: Build Windows application
+        shell: powershell
+        run: |
+          if (Test-Path build) { Remove-Item build -Recurse -Force }
+          if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --onedir `
+            --windowed `
+            --name "PIBIC-LAB" `
+            --hidden-import=config `
+            --hidden-import=config.settings `
+            --hidden-import=config.wsgi `
+            --collect-submodules config `
+            --collect-submodules apps `
+            --collect-submodules pibic_lab_core `
+            --collect-all vela `
+            --collect-all webview `
+            --collect-all setuptools `
+            --collect-all jaraco.text `
+            --collect-all jaraco.functools `
+            --collect-all jaraco.context `
+            --collect-all more_itertools `
+            --collect-all asyncssh `
+            --collect-all keyring `
+            --collect-submodules keyring.backends `
+            --collect-all PyQt5 `
+            --collect-all PyQtWebEngine `
+            --collect-all qtpy `
+            --hidden-import=socks `
+            --hidden-import=webview.platforms.qt `
+            --hidden-import=PyQt5.QtWebEngineWidgets `
+            --exclude-module=webview.platforms.winforms `
+            --exclude-module=clr `
+            --exclude-module=pythonnet `
+            --add-data "apps;apps" `
+            --add-data "catalog;catalog" `
+            --add-data "staticfiles;staticfiles" `
+            launcher.py
+
+      - name: Package Windows build
+        shell: powershell
+        run: |
+          Compress-Archive -Path dist/PIBIC-LAB -DestinationPath dist/PIBIC-LAB-Windows-x86_64.zip -Force
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PIBIC-LAB-Windows-x86_64
+          path: dist/PIBIC-LAB-Windows-x86_64.zip
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-linux
+      - build-windows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            artifacts/PIBIC-LAB-Linux-x86_64.zip \
+            artifacts/PIBIC-LAB-Windows-x86_64.zip \
+            --title "PIBIC LAB $GITHUB_REF_NAME" \
+            --generate-notes
