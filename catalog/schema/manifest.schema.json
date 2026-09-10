@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pibic-lab.local/schema/service-manifest-v1.json",
+  "title": "PIBIC LAB Service Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "name", "category", "manifest_version", "supported",
+    "detect_command_id", "install_plan"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "category": {"type": "string", "minLength": 1},
+    "manifest_version": {"const": 1},
+    "supported": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"const": "*"},
+          {"type": "array", "items": {"type": "string"}}
+        ]
+      }
+    },
+    "detect_command_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "verify_command_id": {"type": ["string", "null"]},
+    "documentation": {"type": ["string", "null"]},
+    "requires_admin": {"type": "boolean"},
+    "icon": {"type": "string"},
+    "install_plan": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action"],
+          "properties": {
+            "action": {
+              "enum": [
+                "apt_update", "apt_install", "apk_add", "systemd_enable",
+                "openrc_enable", "run_fixed"
+              ]
+            },
+            "packages": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^[A-Za-z0-9_.+:-]+$"}
+            },
+            "service": {"type": ["string", "null"]},
+            "command_id": {"type": ["string", "null"]},
+            "description": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

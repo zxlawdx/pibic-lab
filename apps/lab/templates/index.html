@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ static('lab/vendor/xterm/xterm.css') }}">
+  <link rel="stylesheet" href="{{ static('lab/css/app.css') }}">
+  <link rel="stylesheet" href="{{ static('lab/css/proxmox_wizard.css') }}">
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="brand">
+        <div class="brand-mark" data-icon="lab" aria-hidden="true"></div>
+        <div>
+          <strong>PIBIC LAB</strong>
+          <span>VM Access</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" id="mainNav">
+        <button class="nav-item active" data-view="dashboard"><span data-icon="dashboard"></span><span>Visão geral</span></button>
+        <button class="nav-item" data-view="connection"><span data-icon="link"></span><span>Conexão</span></button>
+        <button class="nav-item" data-view="terminal"><span data-icon="terminal"></span><span>Terminal</span></button>
+        <button class="nav-item" data-view="proxmox"><span data-icon="server"></span><span>Proxmox</span></button>
+        <button class="nav-item" data-view="services"><span data-icon="package"></span><span>Serviços</span></button>
+        <button class="nav-item" data-view="docker"><span data-icon="boxes"></span><span>Docker</span></button>
+        <button class="nav-item" data-view="logs"><span data-icon="fileText"></span><span>Logs</span></button>
+        <button class="nav-item" data-view="settings"><span data-icon="settings"></span><span>Configurações</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="connection-pill" id="sidebarConnectionPill">
+          <span class="status-dot neutral"></span>
+          <div><strong id="sidebarConnectionTitle">Não conectado</strong><span id="sidebarConnectionSubtitle">SSH inativo</span></div>
+        </div>
+        <div class="version-line">Versão <span id="appVersion">0.1.2</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="pageEyebrow">Laboratório PIBIC / UNIR</p>
+          <h1 id="pageTitle">Visão geral</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="compact-select">
+            <span>Perfil</span>
+            <select id="profileSelect" aria-label="Selecionar perfil"></select>
+          </label>
+          <button class="icon-button" id="refreshCurrentBtn" title="Atualizar tela" aria-label="Atualizar tela"><span data-icon="refresh"></span></button>
+        </div>
+      </header>
+
+      <section class="view active" data-view-panel="dashboard" aria-labelledby="pageTitle">
+        <div class="hero-card">
+          <div class="hero-copy">
+            <div class="status-kicker"><span class="status-dot neutral" id="heroStatusDot"></span><span id="heroStatusText">Verificando ambiente</span></div>
+            <h2 id="heroHostname">Sua VM em um só lugar</h2>
+            <p id="heroDescription">Conecte-se ao gateway do laboratório para consultar sistema, serviços e recursos permitidos.</p>
+            <div class="button-row">
+              <button class="button primary" id="heroConnectBtn"><span data-icon="link"></span><span>Conectar</span></button>
+              <button class="button secondary" data-go-view="terminal"><span data-icon="terminal"></span><span>Abrir terminal</span></button>
+            </div>
+          </div>
+          <div class="hero-metrics" id="heroMetrics">
+            <div class="metric"><span>CPU</span><strong id="metricCpu">Não disponível</strong></div>
+            <div class="metric"><span>Memória</span><strong id="metricRam">Não disponível</strong></div>
+            <div class="metric"><span>Disco</span><strong id="metricDisk">Não disponível</strong></div>
+            <div class="metric"><span>Uptime</span><strong id="metricUptime">Não disponível</strong></div>
+          </div>
+        </div>
+
+        <div class="grid two-columns dashboard-grid">
+          <article class="card">
+            <div class="card-header"><div><p class="card-kicker">Conectividade</p><h3>Rota até o laboratório</h3></div><button class="text-button" id="dashboardConnectivityBtn">Diagnosticar</button></div>
+            <div class="status-list">
+              <div class="status-row"><span class="status-icon" data-icon="network"></span><div><strong>ZeroTier</strong><span id="dashZtStatus">Aguardando verificação</span></div><span class="badge muted" id="dashZtBadge">--</span></div>
+              <div class="status-row"><span class="status-icon" data-icon="gateway"></span><div><strong>Gateway SSH</strong><span id="dashGatewayStatus">10.57.144.217:22</span></div><span class="badge muted" id="dashGatewayBadge">--</span></div>
+              <div class="status-row"><span class="status-icon" data-icon="shield"></span><div><strong>Host key</strong><span id="dashHostKeyStatus">Ainda não validada</span></div><span class="badge muted" id="dashHostKeyBadge">--</span></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header"><div><p class="card-kicker">Sistema remoto</p><h3>Informações da VM</h3></div><button class="text-button" id="dashboardRefreshBtn">Atualizar</button></div>
+            <dl class="info-grid">
+              <div><dt>Sistema</dt><dd id="infoOs">Não disponível</dd></div>
+              <div><dt>Kernel</dt><dd id="infoKernel">Não disponível</dd></div>
+              <div><dt>Arquitetura</dt><dd id="infoArch">Não disponível</dd></div>
+              <div><dt>CPU</dt><dd id="infoCpu">Não disponível</dd></div>
+              <div class="wide"><dt>IPs detectados</dt><dd id="infoIps">Não disponível</dd></div>
+            </dl>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-header"><div><p class="card-kicker">Serviços</p><h3>Resumo do ambiente</h3></div><button class="text-button" data-go-view="services">Ver catálogo</button></div>
+          <div class="service-summary-grid" id="serviceSummaryGrid"><div class="empty-state compact">Conecte-se para detectar os serviços da VM.</div></div>
+        </article>
+      </section>
+
+      <section class="view" data-view-panel="connection">
+        <div class="grid two-columns connection-grid">
+          <article class="card sticky-card">
+            <div class="card-header"><div><p class="card-kicker">Passo 1</p><h3>Rede e gateway</h3></div><span class="badge muted" id="connectionOverallBadge">Não verificado</span></div>
+            <div class="form-stack">
+              <label class="field"><span>Ambiente</span><select id="environmentSelect"></select><small>O ambiente contém o gateway SSH e o endpoint interno do Proxmox.</small></label>
+              <div class="inline-actions"><button class="button primary" id="checkConnectivityBtn"><span data-icon="activity"></span><span>Verificar conectividade</span></button><button class="button secondary" id="openZtJoinBtn"><span data-icon="network"></span><span>Entrar na rede</span></button></div>
+            </div>
+            <div class="diagnostic-panel" id="connectivityDetails">
+              <div class="diagnostic-line"><span>ZeroTier</span><strong id="ztState">Não verificado</strong></div>
+              <div class="diagnostic-line"><span>Node ID</span><code id="ztNodeId">--</code></div>
+              <div class="diagnostic-line"><span>IP local</span><code id="ztAssignedIp">--</code></div>
+              <div class="diagnostic-line"><span>Gateway SSH</span><strong id="gatewayState">Não verificado</strong></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header"><div><p class="card-kicker">Passo 2</p><h3>Identidade SSH</h3></div><span class="badge muted" id="sshConnectionBadge">Desconectado</span></div>
+            <form id="sshForm" class="form-stack" autocomplete="off">
+              <label class="field"><span>Usuário SSH</span><input id="sshUsername" name="username" type="text" spellcheck="false" placeholder="ex.: marcos" required></label>
+              <label class="field"><span>Método de autenticação</span><select id="sshAuthMethod"><option value="agent">SSH Agent / chave padrão</option><option value="key">Arquivo de chave privada</option><option value="password">Senha SSH</option></select></label>
+              <div id="sshKeyFields" class="conditional-fields hidden">
+                <label class="field"><span>Caminho da chave privada</span><input id="sshKeyPath" type="text" spellcheck="false" placeholder="~/.ssh/id_ed25519"></label>
+                <label class="field"><span>Passphrase da chave</span><input id="sshKeyPassphrase" type="password" autocomplete="off" placeholder="Somente se a chave exigir"></label>
+                <label class="check-row"><input id="saveKeyPassphrase" type="checkbox"><span>Guardar passphrase no keyring do sistema operacional</span></label>
+              </div>
+              <div id="sshPasswordFields" class="conditional-fields hidden">
+                <label class="field"><span>Senha SSH</span><input id="sshPassword" type="password" autocomplete="off" placeholder="Não é armazenada no SQLite"></label>
+                <label class="check-row"><input id="saveSshPassword" type="checkbox"><span>Guardar senha no keyring do sistema operacional</span></label>
+              </div>
+              <div class="hostkey-box" id="hostKeyBox">
+                <div><strong>Fingerprint do servidor</strong><span id="hostKeyText">Valide a host key antes de conectar.</span></div>
+                <button class="button secondary small" type="button" id="probeHostKeyBtn">Validar</button>
+              </div>
+              <div class="inline-actions"><button class="button primary" type="submit" id="connectSshBtn"><span data-icon="link"></span><span>Conectar via SSH</span></button><button class="button danger subtle" type="button" id="disconnectSshBtn"><span data-icon="unlink"></span><span>Desconectar</span></button></div>
+            </form>
+          </article>
+        </div>
+      </section>
+
+      <section class="view terminal-view" data-view-panel="terminal">
+        <article class="terminal-card">
+          <div class="terminal-toolbar">
+            <div><span class="status-dot neutral" id="terminalStatusDot"></span><strong id="terminalTitle">Terminal SSH</strong><span class="toolbar-note" id="terminalSubtitle">Nenhuma sessão aberta</span></div>
+            <div class="button-row compact"><button class="button secondary small" id="terminalNewBtn"><span data-icon="plus"></span><span>Nova sessão</span></button><button class="button danger subtle small" id="terminalCloseBtn"><span data-icon="x"></span><span>Fechar</span></button></div>
+          </div>
+          <div id="terminalHost" class="terminal-host" tabindex="0" aria-label="Terminal SSH integrado"></div>
+          <div class="terminal-fallback hidden" id="terminalFallback" tabindex="0" aria-label="Terminal SSH básico"><pre id="terminalFallbackOutput"></pre><div class="fallback-input-line"><span>&gt;</span><input id="terminalFallbackInput" type="text" autocomplete="off" spellcheck="false" aria-label="Entrada de terminal"></div></div>
+          <div class="terminal-footer"><span id="terminalEngineLabel">Carregando componente de terminal</span><span id="terminalSessionLabel">Sessão: --</span></div>
+        </article>
+      </section>
+
+      <section class="view" data-view-panel="proxmox">
+        <div class="section-intro"><div><p class="eyebrow">Recursos autorizados</p><h2>Proxmox VE</h2><p>Consulta pela API oficial através do túnel SSH. O aplicativo filtra a interface pelas VMs atribuídas ao perfil, enquanto a ACL do Proxmox continua sendo a barreira de segurança real.</p></div><div class="button-row"><button class="button secondary" id="createProxmoxVmBtn"><span data-icon="plus"></span><span>Criar VM</span></button><button class="button secondary" id="openProxmoxWebBtn"><span data-icon="external"></span><span>Painel Web</span></button><button class="button secondary" id="proxmoxCredentialBtn"><span data-icon="key"></span><span>Configurar token</span></button><button class="button primary" id="refreshProxmoxBtn"><span data-icon="refresh"></span><span>Atualizar VMs</span></button></div></div>
+        <article class="card table-card"><div class="table-wrap"><table><thead><tr><th>VMID</th><th>Nome</th><th>Estado</th><th>CPU</th><th>Memória</th><th>Uptime</th><th class="actions-col">Ações</th></tr></thead><tbody id="proxmoxTableBody"><tr><td colspan="7"><div class="empty-state">Conecte o SSH e configure um API Token de privilégio mínimo.</div></td></tr></tbody></table></div></article>
+      </section>
+
+      <section class="view" data-view-panel="services">
+        <div class="section-intro"><div><p class="eyebrow">Catálogo declarativo</p><h2>Serviços da VM</h2><p>Detecção somente leitura e instalação assistida por manifests tipados. Antes de qualquer alteração, o plano e os comandos são apresentados para confirmação.</p></div><div class="button-row"><button class="button secondary" id="detectServicesBtn"><span data-icon="search"></span><span>Detectar instalados</span></button><button class="button primary" id="refreshCatalogBtn"><span data-icon="refresh"></span><span>Recarregar catálogo</span></button></div></div>
+        <div class="catalog-grid" id="catalogGrid"><div class="empty-state">Carregando catálogo local.</div></div>
+        <article class="card jobs-card"><div class="card-header"><div><p class="card-kicker">Execuções</p><h3>Jobs de instalação</h3></div><button class="text-button" id="refreshJobsBtn">Atualizar</button></div><div id="jobsList" class="job-list"><div class="empty-state compact">Nenhum job executado.</div></div></article>
+      </section>
+
+      <section class="view" data-view-panel="docker">
+        <div class="section-intro"><div><p class="eyebrow">Containers da VM</p><h2>Docker</h2><p>A inspeção ocorre pela CLI remota via SSH. O socket Docker não é exposto pela rede e o aplicativo não adiciona usuários ao grupo docker.</p></div><button class="button primary" id="refreshDockerBtn"><span data-icon="refresh"></span><span>Atualizar containers</span></button></div>
+        <article class="card table-card"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Imagem</th><th>Estado</th><th>Portas</th><th>Compose</th><th class="actions-col">Ações</th></tr></thead><tbody id="dockerTableBody"><tr><td colspan="6"><div class="empty-state">Conecte-se via SSH para consultar o Docker.</div></td></tr></tbody></table></div></article>
+      </section>
+
+      <section class="view" data-view-panel="logs">
+        <div class="section-intro"><div><p class="eyebrow">Auditoria local</p><h2>Eventos e diagnóstico</h2><p>Eventos administrativos são registrados sem senhas, tokens ou chaves privadas. O pacote de diagnóstico também passa pela sanitização.</p></div><div class="button-row"><button class="button secondary" id="exportDiagnosticsBtn"><span data-icon="download"></span><span>Exportar diagnóstico</span></button><button class="button primary" id="refreshLogsBtn"><span data-icon="refresh"></span><span>Atualizar logs</span></button></div></div>
+        <article class="card log-card"><div class="log-filters"><label class="field compact-field"><span>Filtrar</span><input id="logFilter" type="search" placeholder="ação, categoria ou alvo"></label></div><div id="logsList" class="logs-list"><div class="empty-state">Nenhum evento para exibir.</div></div></article>
+      </section>
+
+      <section class="view" data-view-panel="settings">
+        <div class="settings-layout">
+          <article class="card">
+            <div class="card-header"><div><p class="card-kicker">Perfil local</p><h3>Identidade e permissões de interface</h3></div></div>
+            <form id="profileForm" class="form-stack">
+              <input id="profileId" type="hidden">
+              <label class="field"><span>Nome de exibição</span><input id="profileDisplayName" type="text" required></label>
+              <label class="field"><span>Usuário SSH padrão</span><input id="profileSshUsername" type="text" spellcheck="false"></label>
+              <label class="field"><span>Perfil</span><select id="profileRole"><option value="student">Pesquisador / Aluno PIBIC</option><option value="advisor">Professor / Orientador</option><option value="admin">Administrador do laboratório</option></select><small>Esta seleção organiza a interface local. A autorização real deve continuar em SSH, sudo/doas e ACLs do Proxmox.</small></label>
+              <label class="field"><span>VMIDs atribuídos</span><input id="profileVmids" type="text" placeholder="101, 102"><small>Separe os IDs por vírgula. Vazio significa nenhuma VM atribuída para perfis não administrativos.</small></label>
+              <label class="check-row"><input id="profileCanPower" type="checkbox"><span>Permitir ações Start / Stop / Reboot na interface</span></label>
+              <label class="check-row"><input id="profileCanInstall" type="checkbox"><span>Permitir instalação assistida na interface</span></label>
+              <button class="button primary" type="submit"><span data-icon="save"></span><span>Salvar perfil</span></button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-header"><div><p class="card-kicker">Infraestrutura</p><h3>Ambiente do laboratório</h3></div></div>
+            <form id="environmentForm" class="form-stack">
+              <input id="environmentId" type="hidden">
+              <label class="field"><span>Nome do ambiente</span><input id="environmentName" type="text" required></label>
+              <div class="field-row"><label class="field"><span>Gateway SSH</span><input id="environmentGateway" type="text" required spellcheck="false"></label><label class="field narrow"><span>Porta</span><input id="environmentSshPort" type="number" min="1" max="65535" required></label></div>
+              <div class="field-row"><label class="field"><span>Host interno Proxmox</span><input id="environmentProxmoxHost" type="text" required spellcheck="false"></label><label class="field narrow"><span>Porta</span><input id="environmentProxmoxPort" type="number" min="1" max="65535" required></label></div>
+              <label class="field"><span>ZeroTier Network ID</span><input id="environmentNetworkId" type="text" spellcheck="false" maxlength="16" placeholder="16 caracteres hexadecimais"></label>
+              <button class="button primary" type="submit"><span data-icon="save"></span><span>Salvar ambiente</span></button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-header"><div><p class="card-kicker">Segurança</p><h3>Proxmox e TLS</h3></div></div>
+            <form id="appSettingsForm" class="form-stack">
+              <label class="check-row"><input id="verifyProxmoxTls" type="checkbox" checked><span>Validar certificado TLS do Proxmox</span></label>
+              <label class="field"><span>Arquivo de CA personalizado</span><input id="proxmoxCaPath" type="text" spellcheck="false" placeholder="Opcional"></label>
+              <label class="check-row danger-check"><input id="allowUnsafeTls" type="checkbox"><span>Permitir TLS inseguro para diagnóstico local</span></label>
+              <div class="notice warning"><span data-icon="alert"></span><p>Desabilitar a validação TLS reduz a segurança. Use apenas para diagnóstico controlado e volte a habilitar em seguida.</p></div>
+              <button class="button primary" type="submit"><span data-icon="save"></span><span>Salvar segurança</span></button>
+            </form>
+          </article>
+
+          <article class="card security-card">
+            <div class="security-illustration" data-icon="shieldLarge"></div>
+            <div><p class="card-kicker">Modelo de confiança</p><h3>Segredos fora do banco local</h3><p>Senhas e API tokens ficam no keyring nativo do sistema operacional. O SQLite armazena apenas metadados e preferências. O aplicativo nunca precisa de token root global do Proxmox.</p></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header"><div><p class="card-kicker" id="modalKicker">Confirmação</p><h3 id="modalTitle">Confirmar ação</h3></div><button class="icon-button" id="modalCloseBtn" aria-label="Fechar"><span data-icon="x"></span></button></div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </section>
+  </div>
+
+  <script src="{{ static('lab/vendor/xterm/xterm.js') }}"></script>
+  <script src="{{ static('lab/vendor/xterm/xterm-addon-fit.js') }}"></script>
+  <script src="{{ static('lab/js/icons.js') }}"></script>
+  <script src="{{ static('lab/js/app.js') }}"></script>
+  <script src="{{ static('lab/js/proxmox_wizard.js') }}"></script>
+</body>
+</html>

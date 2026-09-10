@@ -1,0 +1,27 @@
+PIBIC LAB - INÍCIO RÁPIDO
+
+WINDOWS
+1. Extraia a pasta do projeto.
+2. Execute SETUP_WINDOWS.bat uma única vez.
+3. Depois use INICIAR_WINDOWS.bat sempre que quiser abrir o aplicativo.
+4. Para gerar um pacote executável, execute BUILD_WINDOWS.bat no Windows.
+
+LINUX MINT / UBUNTU / DEBIAN
+1. Abra um terminal nesta pasta.
+2. Execute: chmod +x setup_linux.sh iniciar_linux.sh
+3. Execute: ./setup_linux.sh
+4. Depois use: ./iniciar_linux.sh
+
+PRIMEIRO ACESSO
+- Configure o ZeroTier Network ID, se necessário.
+- Selecione o perfil e informe o usuário SSH.
+- Clique em Validar para conferir a fingerprint do gateway antes de enviar credenciais.
+- Confirme a fingerprint somente após compará-la com uma fonte confiável.
+- Conecte por SSH e abra o terminal.
+- Configure um API Token de privilégio mínimo na aba Proxmox se esse recurso for autorizado.
+
+SEGURANÇA
+- Não use root@pam com token global no Proxmox.
+- Não compartilhe senha de root ou token administrativo do ZeroTier.
+- Senhas salvas pelo aplicativo ficam no keyring do sistema operacional, não no SQLite.
+- A função de perfil local organiza a interface; permissões reais devem ser impostas no servidor, sudo/doas e ACLs do Proxmox.

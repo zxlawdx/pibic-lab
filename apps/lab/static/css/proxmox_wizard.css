@@ -1,0 +1,80 @@
+/* Proxmox VM Wizard ------------------------------------------------------- */
+.pve-wizard-modal { width: min(1120px, calc(100vw - 44px)); max-width: 1120px; }
+.pve-wizard-modal .modal-body { max-height: min(72vh, 760px); overflow: auto; }
+.pve-wizard { display: grid; gap: 18px; }
+.pve-wizard-tabs { display: grid; grid-template-columns: repeat(8, minmax(92px, 1fr)); gap: 6px; position: sticky; top: -1px; z-index: 3; background: var(--surface, #111827); padding: 4px 0 12px; }
+.pve-wizard-tab { border: 1px solid #2d3b50; border-radius: 8px; background: #0f1724; color: #8fa0b7; padding: 9px 7px; font: inherit; font-size: 12px; cursor: pointer; }
+.pve-wizard-tab.active { color: #fff; border-color: #4f9cff; background: #17243a; }
+.pve-wizard-tab.done { color: #a9c9ff; }
+.pve-wizard-step { display: none; gap: 14px; }
+.pve-wizard-step.active { display: grid; }
+.pve-wizard-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pve-wizard-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.pve-wizard-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.pve-wizard-nav { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #263448; padding-top: 16px; margin-top: 4px; }
+.pve-wizard-nav .right { display: flex; gap: 10px; }
+.pve-source-panel, .pve-url-panel, .pve-summary { border: 1px solid #2a394e; border-radius: 10px; background: #0d1521; padding: 14px; }
+.pve-url-meta { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; color: #9aa9bd; font-size: 12px; }
+.pve-url-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.pve-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pve-summary-item { border: 1px solid #253349; border-radius: 8px; padding: 10px; }
+.pve-summary-item span { display: block; color: #7f90a8; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.pve-summary-item strong { color: #e6edf7; font-size: 13px; word-break: break-word; }
+.pve-download-progress { min-height: 20px; color: #90a0b7; font-size: 12px; }
+.pve-wizard .field small { color: #718199; }
+@media (max-width: 980px) {
+  .pve-wizard-tabs { grid-template-columns: repeat(4, 1fr); }
+  .pve-wizard-grid-4, .pve-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .pve-wizard-grid-2, .pve-wizard-grid-3, .pve-wizard-grid-4, .pve-summary-grid { grid-template-columns: 1fr; }
+}
+
+
+/* Async operation feedback ------------------------------------------------ */
+.pve-busy-panel {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  min-height: 250px;
+  text-align: center;
+  padding: 32px 20px;
+}
+.pve-busy-spinner,
+.pve-mini-spinner {
+  border-radius: 999px;
+  border: 2px solid #314057;
+  border-top-color: #4f9cff;
+  animation: pve-spin .75s linear infinite;
+}
+.pve-busy-spinner { width: 42px; height: 42px; border-width: 3px; }
+.pve-mini-spinner { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; margin-right: 7px; }
+@keyframes pve-spin { to { transform: rotate(360deg); } }
+
+.pve-operation {
+  border: 1px solid #2a394e;
+  border-radius: 12px;
+  background: #0d1521;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+.pve-operation-head { display: flex; align-items: center; gap: 12px; }
+.pve-operation-copy { min-width: 0; flex: 1; }
+.pve-operation-copy strong { display: block; color: #e8eef8; margin-bottom: 4px; }
+.pve-operation-copy span { color: #8fa0b7; font-size: 12px; overflow-wrap: anywhere; }
+.pve-operation-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #8191a8; font-size: 12px; }
+.pve-operation-meta code { color: #a9c9ff; overflow-wrap: anywhere; }
+.pve-operation-track { height: 6px; border-radius: 999px; overflow: hidden; background: #182437; }
+.pve-operation-bar { height: 100%; width: 35%; border-radius: inherit; background: #4f9cff; animation: pve-indeterminate 1.15s ease-in-out infinite; }
+.pve-operation.done .pve-operation-bar { width: 100%; animation: none; background: #42c77a; }
+.pve-operation.error .pve-operation-bar { width: 100%; animation: none; background: #e06464; }
+.pve-operation.cancelled .pve-operation-bar { width: 100%; animation: none; background: #d6a84d; }
+@keyframes pve-indeterminate {
+  0% { transform: translateX(-120%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(300%); }
+}
+.pve-operation-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.pve-operation-note { color: #75869e; font-size: 11px; line-height: 1.45; }
+.button.is-busy { pointer-events: none; opacity: .78; }

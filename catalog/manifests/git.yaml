@@ -1,0 +1,31 @@
+id: git
+name: Git
+description: Controle de versão distribuído para projetos e repositórios do laboratório.
+category: desenvolvimento
+manifest_version: 1
+supported:
+  debian: "*"
+  ubuntu: "*"
+  alpine: "*"
+detect_command_id: git
+verify_command_id: git
+documentation: https://git-scm.com/doc
+requires_admin: true
+icon: git-branch
+install_plan:
+  debian:
+    - action: apt_update
+      description: Atualizar o índice local de pacotes APT.
+    - action: apt_install
+      packages: [git]
+      description: Instalar o pacote Git do repositório da distribuição.
+  ubuntu:
+    - action: apt_update
+      description: Atualizar o índice local de pacotes APT.
+    - action: apt_install
+      packages: [git]
+      description: Instalar o pacote Git do repositório da distribuição.
+  alpine:
+    - action: apk_add
+      packages: [git]
+      description: Instalar o pacote Git com APK.
