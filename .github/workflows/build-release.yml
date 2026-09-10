@@ -245,6 +245,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
             artifacts/PIBIC-LAB-Linux-x86_64.zip \
             artifacts/PIBIC-LAB-Windows-x86_64.zip \
             --title "PIBIC LAB $GITHUB_REF_NAME" \
