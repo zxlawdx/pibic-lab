@@ -1,8 +1,10 @@
 """Camada de aplicação do PIBIC LAB."""
 
 from .facade import AppFacade
-from .workspace_multiuser import install_workspace_multiuser
+from . import workspace_multiuser as _workspace_multiuser
+from .workspace_shell_fix import apply_workspace_shell_fix
 
-install_workspace_multiuser(AppFacade)
+apply_workspace_shell_fix(_workspace_multiuser)
+_workspace_multiuser.install_workspace_multiuser(AppFacade)
 
 __all__ = ["AppFacade"]
