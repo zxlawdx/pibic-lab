@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.3 - Workspace multiusuário
+
+- Workspace iniciado com o usuário real da sessão SSH do PIBIC-LAB.
+- HOME, UID, shell, terminal e arquivos isolados por integrante.
+- Porta loopback dinâmica por instância e Local Port Forward pelo SSH autenticado.
+- Encerramento da instância individual ao desconectar ou fechar o Workspace.
+- Interface identifica o usuário SSH associado ao Workspace.
+
 ## 0.1.1 - 2026-09-09
 
 - Corrige a estrutura dos arquivos estáticos para o comportamento real do `collectstatic` do Vela.
