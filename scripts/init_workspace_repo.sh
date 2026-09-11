@@ -4,6 +4,7 @@ set -eu
 SRC="/opt/pibic-workspace"
 DEST="${1:-$HOME/pibic-workspace-repo}"
 REMOTE="${2:-}"
+VERSION="4.1.0"
 
 if [ ! -d "$SRC/app" ] || [ ! -d "$SRC/web" ]; then
     echo "[ERRO] PIBIC Workspace nao encontrado em $SRC"
@@ -47,32 +48,44 @@ copy_tree() {
     fi
 }
 
+copy_root_file() {
+    source="$1"
+    target="$2"
+    if [ ! -f "$source" ]; then
+        return 0
+    fi
+    if [ -r "$source" ]; then
+        cat "$source" > "$target"
+    elif command -v doas >/dev/null 2>&1; then
+        doas cat "$source" > "$target"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo cat "$source" > "$target"
+    else
+        echo "[AVISO] Sem permissao para exportar $source"
+        return 0
+    fi
+}
+
 copy_tree app
 copy_tree web
 
-for f in VERSION requirements.txt pyproject.toml; do
+for f in requirements.txt pyproject.toml; do
     if [ -f "$SRC/$f" ]; then
-        if [ -r "$SRC/$f" ]; then
-            cp "$SRC/$f" "$DEST/$f"
-        elif command -v doas >/dev/null 2>&1; then
-            doas cat "$SRC/$f" > "$DEST/$f"
-        elif command -v sudo >/dev/null 2>&1; then
-            sudo cat "$SRC/$f" > "$DEST/$f"
-        fi
+        copy_root_file "$SRC/$f" "$DEST/$f"
     fi
 done
 
-printf '%s\n' '4.0.0' > "$DEST/VERSION"
+printf '%s\n' "$VERSION" > "$DEST/VERSION"
 
-if [ -f /etc/init.d/pibic-workspace ]; then
-    if [ -r /etc/init.d/pibic-workspace ]; then
-        cat /etc/init.d/pibic-workspace > "$DEST/deploy/pibic-workspace.openrc"
-    elif command -v doas >/dev/null 2>&1; then
-        doas cat /etc/init.d/pibic-workspace > "$DEST/deploy/pibic-workspace.openrc"
-    elif command -v sudo >/dev/null 2>&1; then
-        sudo cat /etc/init.d/pibic-workspace > "$DEST/deploy/pibic-workspace.openrc"
+copy_root_file /etc/init.d/pibic-workspace "$DEST/deploy/pibic-workspace.openrc"
+
+# O helper privilegiado usa allowlist. Exportamos o fonte para que o repo
+# represente a instalacao real, mas nunca copiamos doas.conf, senhas ou tokens.
+for helper in /usr/local/sbin/pibic-workspace-helper /usr/local/libexec/pibic-workspace-priv; do
+    if [ -f "$helper" ]; then
+        copy_root_file "$helper" "$DEST/deploy/$(basename "$helper")"
     fi
-fi
+done
 
 find "$DEST" -type d -name __pycache__ -prune -exec rm -rf '{}' + 2>/dev/null || true
 find "$DEST" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete 2>/dev/null || true
@@ -102,14 +115,23 @@ cat > "$DEST/README.md" <<'EOF'
 
 Interface web leve para administracao e desenvolvimento em uma VM Alpine Linux.
 
+## Recursos
+
+- Dashboard com CPU, RAM, disco, uptime e carga reais
+- Processos, armazenamento, rede e usuarios
+- Terminal PTY real via WebSocket/xterm.js
+- Editor de codigo e gerenciador de arquivos
+- APK Package Manager
+- Servicos OpenRC
+- Docker e logs
+- Interface responsiva com assets locais e icones SVG
+
 ## Arquitetura
 
 - Backend Python no Alpine
 - Interface HTML/CSS/JavaScript renderizada no navegador do cliente
-- Terminal PTY real via WebSocket/xterm.js
-- Editor de codigo e gerenciador de arquivos
-- Integracao com APK, OpenRC e Docker
-- Telemetria de CPU, RAM, armazenamento, processos e rede
+- APIs locais para telemetria e administracao controlada
+- Camada privilegiada limitada por allowlist
 
 ## Seguranca de acesso
 
@@ -134,12 +156,12 @@ O projeto nao deve alterar SSH, porta 22, DNS, interfaces de rede, firewall ou Z
 ```text
 app/      backend e APIs
 web/      frontend e assets locais
-deploy/   exemplos de integracao com OpenRC
+deploy/   servico OpenRC e helper privilegiado, quando presente
 ```
 
 ## Desenvolvimento
 
-Nao publique senhas, tokens, arquivos `.env`, bancos locais, logs ou backups no repositorio.
+Nao publique senhas, tokens, arquivos `.env`, bancos locais, logs, backups ou configuracoes privadas da VM no repositorio.
 EOF
 
 cd "$DEST"
@@ -152,7 +174,7 @@ git init -b main >/dev/null 2>&1 || {
 git add .
 
 if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
-    git commit -m "Initial PIBIC Workspace export" >/dev/null || true
+    git commit -m "Initial PIBIC Workspace v$VERSION export" >/dev/null || true
     COMMITTED=yes
 else
     COMMITTED=no
@@ -171,6 +193,7 @@ echo "=================================================="
 echo "REPOSITORIO LOCAL PREPARADO"
 echo "=================================================="
 echo "Diretorio: $DEST"
+echo "Versao: $VERSION"
 echo "Branch: main"
 echo
 
@@ -179,7 +202,7 @@ if [ "$COMMITTED" = no ]; then
     echo '  git config --global user.name "Seu Nome"'
     echo '  git config --global user.email "seu-email@example.com"'
     echo "  cd '$DEST'"
-    echo '  git commit -m "Initial PIBIC Workspace export"'
+    echo "  git commit -m 'Initial PIBIC Workspace v$VERSION export'"
     echo
 fi
 
