@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from typing import Any, Callable
-import webbrowser
 
 from pydantic import ValidationError
 from vela.api import api
@@ -17,28 +16,6 @@ def _json(context: dict | None) -> dict[str, Any]:
         return {}
     data = context.get("json") or {}
     return data if isinstance(data, dict) else {}
-
-
-def _open_workspace_browser(profile_id: int) -> dict[str, Any]:
-    """Cria o forward e solicita abertura no navegador padrão local."""
-
-    result = facade.workspace_open(profile_id)
-
-    url = str(result.get("url") or "").strip()
-
-    opened = False
-
-    if url:
-        try:
-            opened = bool(
-                webbrowser.open_new_tab(url)
-            )
-        except Exception:
-            opened = False
-
-    result["browser_opened"] = opened
-
-    return result
 
 
 def _required(data: dict[str, Any], *fields: str) -> None:
@@ -144,42 +121,6 @@ def ssh_status(context=None):
     data = _json(context)
     _required(data, "profile_id")
     return _call(lambda: facade.ssh_status(int(data["profile_id"])))
-
-
-@api.post("/lab/workspace/status/")
-def workspace_status(context=None):
-    data = _json(context)
-    _required(data, "profile_id")
-
-    return _call(
-        lambda: facade.workspace_status(
-            int(data["profile_id"])
-        )
-    )
-
-
-@api.post("/lab/workspace/open/")
-def workspace_open(context=None):
-    data = _json(context)
-    _required(data, "profile_id")
-
-    return _call(
-        lambda: _open_workspace_browser(
-            int(data["profile_id"])
-        )
-    )
-
-
-@api.post("/lab/workspace/close/")
-def workspace_close(context=None):
-    data = _json(context)
-    _required(data, "profile_id")
-
-    return _call(
-        lambda: facade.workspace_close(
-            int(data["profile_id"])
-        )
-    )
 
 
 @api.post("/lab/terminal/open/")

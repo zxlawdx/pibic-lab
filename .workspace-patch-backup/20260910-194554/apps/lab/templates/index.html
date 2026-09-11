@@ -65,14 +65,7 @@
             <div class="button-row">
               <button class="button primary" id="heroConnectBtn"><span data-icon="link"></span><span>Conectar</span></button>
               <button class="button secondary" data-go-view="terminal"><span data-icon="terminal"></span><span>Abrir terminal</span></button>
-              <button class="button secondary" id="openWorkspaceBtn" type="button">
-                <span data-icon="external"></span>
-                <span>Abrir Workspace</span>
-              </button>
             </div>
-            <p id="workspaceConnectionHint" class="toolbar-note">
-              O Workspace usa a sessão SSH atual e cria um forward local temporário.
-            </p>
           </div>
           <div class="hero-metrics" id="heroMetrics">
             <div class="metric"><span>CPU</span><strong id="metricCpu">Não disponível</strong></div>
@@ -245,7 +238,6 @@
   <script src="{{ static('lab/vendor/xterm/xterm-addon-fit.js') }}"></script>
   <script src="{{ static('lab/js/icons.js') }}"></script>
   <script src="{{ static('lab/js/app.js') }}"></script>
-  <script src="{{ static('lab/js/workspace.js') }}"></script>
   <script src="{{ static('lab/js/proxmox_wizard.js') }}"></script>
 </body>
 </html>
