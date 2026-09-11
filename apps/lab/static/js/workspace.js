@@ -91,7 +91,7 @@
     }
 
     setHint(
-      'Verificando o serviço em 127.0.0.1:8765...'
+      'Verificando o Workspace do usuário SSH...'
     );
 
     try {
@@ -110,7 +110,7 @@
       }
 
       setHint(
-        'Workspace encontrado. Criando túnel SSH...'
+        `Workspace pronto para ${status.remote_user || 'usuário SSH'}. Criando túnel SSH...`
       );
 
       const result = await lab.api(
@@ -128,7 +128,7 @@
       );
 
       lab.toast(
-        `Forward criado: 127.0.0.1:${result.local_port} → VM:8765`,
+        `${result.remote_user || 'usuário SSH'} · 127.0.0.1:${result.local_port} → VM:${result.remote_port}`,
         'success',
         'PIBIC Workspace'
       );
@@ -241,12 +241,12 @@
 
       if (status.available) {
         setHint(
-          'Workspace disponível na VM. Clique para abrir.',
+          `Workspace disponível para ${status.remote_user || 'usuário SSH'}. Clique para abrir.`,
           'success'
         );
       } else {
         setHint(
-          'Workspace ainda não respondeu em 127.0.0.1:8765.'
+          status.message || 'Workspace indisponível para este usuário SSH.'
         );
       }
     } catch (_) {
