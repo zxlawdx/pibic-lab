@@ -1,0 +1,196 @@
+#!/bin/sh
+set -eu
+
+SRC="/opt/pibic-workspace"
+DEST="${1:-$HOME/pibic-workspace-repo}"
+REMOTE="${2:-}"
+
+if [ ! -d "$SRC/app" ] || [ ! -d "$SRC/web" ]; then
+    echo "[ERRO] PIBIC Workspace nao encontrado em $SRC"
+    exit 1
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    echo "Git nao encontrado. Tentando instalar..."
+    if command -v doas >/dev/null 2>&1; then
+        doas apk add --no-cache git
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo apk add --no-cache git
+    elif [ "$(id -u)" -eq 0 ]; then
+        apk add --no-cache git
+    else
+        echo "[ERRO] Instale git antes de continuar."
+        exit 1
+    fi
+fi
+
+if [ -e "$DEST" ] && [ -n "$(ls -A "$DEST" 2>/dev/null || true)" ]; then
+    echo "[ERRO] O destino ja existe e nao esta vazio: $DEST"
+    echo "Use outro diretorio, por exemplo:"
+    echo "  sh $0 $HOME/pibic-workspace-repo-2"
+    exit 1
+fi
+
+mkdir -p "$DEST" "$DEST/deploy"
+
+copy_tree() {
+    name="$1"
+    if [ -r "$SRC/$name" ]; then
+        tar -C "$SRC" -cf - "$name" | tar -C "$DEST" -xf -
+    elif command -v doas >/dev/null 2>&1; then
+        doas tar -C "$SRC" -cf - "$name" | tar -C "$DEST" -xf -
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo tar -C "$SRC" -cf - "$name" | tar -C "$DEST" -xf -
+    else
+        echo "[ERRO] Sem permissao para copiar $SRC/$name"
+        exit 1
+    fi
+}
+
+copy_tree app
+copy_tree web
+
+for f in VERSION requirements.txt pyproject.toml; do
+    if [ -f "$SRC/$f" ]; then
+        if [ -r "$SRC/$f" ]; then
+            cp "$SRC/$f" "$DEST/$f"
+        elif command -v doas >/dev/null 2>&1; then
+            doas cat "$SRC/$f" > "$DEST/$f"
+        elif command -v sudo >/dev/null 2>&1; then
+            sudo cat "$SRC/$f" > "$DEST/$f"
+        fi
+    fi
+done
+
+printf '%s\n' '4.0.0' > "$DEST/VERSION"
+
+if [ -f /etc/init.d/pibic-workspace ]; then
+    if [ -r /etc/init.d/pibic-workspace ]; then
+        cat /etc/init.d/pibic-workspace > "$DEST/deploy/pibic-workspace.openrc"
+    elif command -v doas >/dev/null 2>&1; then
+        doas cat /etc/init.d/pibic-workspace > "$DEST/deploy/pibic-workspace.openrc"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo cat /etc/init.d/pibic-workspace > "$DEST/deploy/pibic-workspace.openrc"
+    fi
+fi
+
+find "$DEST" -type d -name __pycache__ -prune -exec rm -rf '{}' + 2>/dev/null || true
+find "$DEST" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete 2>/dev/null || true
+
+cat > "$DEST/.gitignore" <<'EOF'
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+*.pid
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+backups/
+node_modules/
+.DS_Store
+.vscode/
+.idea/
+EOF
+
+cat > "$DEST/README.md" <<'EOF'
+# PIBIC Workspace
+
+Interface web leve para administracao e desenvolvimento em uma VM Alpine Linux.
+
+## Arquitetura
+
+- Backend Python no Alpine
+- Interface HTML/CSS/JavaScript renderizada no navegador do cliente
+- Terminal PTY real via WebSocket/xterm.js
+- Editor de codigo e gerenciador de arquivos
+- Integracao com APK, OpenRC e Docker
+- Telemetria de CPU, RAM, armazenamento, processos e rede
+
+## Seguranca de acesso
+
+O servico deve permanecer restrito ao loopback da VM:
+
+```text
+127.0.0.1:8765
+```
+
+Para acesso remoto, use um SSH Local Port Forward. Exemplo:
+
+```bash
+ssh -N -L 18765:127.0.0.1:8765 usuario@servidor
+```
+
+Depois abra `http://127.0.0.1:18765` no navegador local.
+
+O projeto nao deve alterar SSH, porta 22, DNS, interfaces de rede, firewall ou ZeroTier durante uma atualizacao de interface.
+
+## Estrutura
+
+```text
+app/      backend e APIs
+web/      frontend e assets locais
+deploy/   exemplos de integracao com OpenRC
+```
+
+## Desenvolvimento
+
+Nao publique senhas, tokens, arquivos `.env`, bancos locais, logs ou backups no repositorio.
+EOF
+
+cd "$DEST"
+
+git init -b main >/dev/null 2>&1 || {
+    git init >/dev/null
+    git branch -M main
+}
+
+git add .
+
+if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
+    git commit -m "Initial PIBIC Workspace export" >/dev/null || true
+    COMMITTED=yes
+else
+    COMMITTED=no
+fi
+
+if [ -n "$REMOTE" ]; then
+    if git remote get-url origin >/dev/null 2>&1; then
+        git remote set-url origin "$REMOTE"
+    else
+        git remote add origin "$REMOTE"
+    fi
+fi
+
+echo
+echo "=================================================="
+echo "REPOSITORIO LOCAL PREPARADO"
+echo "=================================================="
+echo "Diretorio: $DEST"
+echo "Branch: main"
+echo
+
+if [ "$COMMITTED" = no ]; then
+    echo "O Git ainda nao tem nome/e-mail configurados. Rode:"
+    echo '  git config --global user.name "Seu Nome"'
+    echo '  git config --global user.email "seu-email@example.com"'
+    echo "  cd '$DEST'"
+    echo '  git commit -m "Initial PIBIC Workspace export"'
+    echo
+fi
+
+if [ -n "$REMOTE" ]; then
+    echo "Remote origin: $REMOTE"
+    echo "Para enviar:"
+    echo "  cd '$DEST'"
+    echo "  git push -u origin main"
+else
+    echo "Depois de criar um repositorio remoto, conecte com:"
+    echo "  cd '$DEST'"
+    echo "  git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git"
+    echo "  git push -u origin main"
+fi
